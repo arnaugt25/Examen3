@@ -10,8 +10,10 @@
             <input type="text" v-model="search" placeholder="Buscar por nombre o categoria"
             class="w-full px-4 py-2 border border-black rounded-lg "  aria-label="nombre"/>
         </div> -->
-        <select v-model="filters.category" class="w-full px-4 py-2 md:px-2 md:py-1 border rounded-lg text-base md:text-md mb-4 border-black">
-          <option >Totes categorías</option>
+        <select v-model="filters.category" 
+                @change="filtrarPorCategoria"
+                class="w-full px-4 py-2 md:px-2 md:py-1 border rounded-lg text-base md:text-md mb-4 border-black">
+          <option value="">Totes categorías</option>
           <option v-for="category in categories" :key="category" :value="category">{{ category }}</option>
         </select>
         </div>
@@ -25,7 +27,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="anunci in filteredEvents" :key="anunci.id">
+                    <tr v-for="anunci in anuncis" :key="anunci.id">
                         <td class="text-left border border-black p-2">{{ anunci.titol }}</td>
                         <td class="text-left border border-black p-2">{{ anunci.category.name }}</td>
                         <td class="text-left border border-black p-2">
@@ -39,7 +41,7 @@
                 </tbody>
             </table>
         </div>
-        <div v-if="filteredEvents.length === 0" class="mt-4 text-center text-gray-500">
+        <div v-if="anuncis.length === 0" class="mt-4 text-center text-gray-500">
             No se encontraron resultados
         </div>
     </div>
@@ -58,12 +60,12 @@ const props = defineProps({
 
 const filters = ref({
   search: '',
-  category: 'Totes categorías',
+  category: '',
   date: '',
   titol: ''
 });
 
-const anunci = ref(props.anuncis);
+const anuncis = ref(props.anuncis);
 const categories = computed(() => [...new Set(props.anuncis.map(e => e.category?.name).filter(Boolean))]);
 
 function CrearType() {
@@ -75,34 +77,34 @@ function Delete(id) {
     _method: 'DELETE'
   })
   .then(() => {
-    filteredEvents.value = filteredEvents.value.filter(item => item.id !== id);
-    anunci.value = anunci.value.filter(item => item.id !== id);
+    anuncis.value = anuncis.value.filter(item => item.id !== id);
   })
   .catch(() => console.error('Error al eliminar'));
 }
 
+function filtrarPorCategoria() {
+    if (!filters.value.category) {
+        anuncis.value = props.anuncis;
+        return;
+    }
 
-const filteredEvents = ref([...props.anuncis]);
+    axios.get('/filter-anuncis', {
+        params: {
+            category: filters.value.category
+        }
+    })
+    .then(response => {
+        anuncis.value = response.data;
+    })
+    .catch(error => {
+        console.error('Error al filtrar por categoría:', error);
+        anuncis.value = props.anuncis.filter(anunci => 
+            anunci.category?.name === filters.value.category
+        );
+    });
+}
 
 onMounted(() => {
-  filteredEvents.value = [...props.anuncis];
-});
-
-watch(() => filters.value.category, (category) => {
-  if (!category || category === 'Totes categorías') {
-    filteredEvents.value = [...props.anuncis];
-  } else {
-    axios.get('/anunci')
-      .then(() => {
-        filteredEvents.value = props.anuncis.filter(anunci =>
-          anunci.category && anunci.category.name === category
-        );
-      })
-      .catch(() => {
-        filteredEvents.value = props.anuncis.filter(anunci =>
-          anunci.category && anunci.category.name === category
-        );
-      });
-  }
+  anuncis.value = [...props.anuncis];
 });
 </script>

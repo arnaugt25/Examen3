@@ -15,6 +15,6 @@ Route::get('dashboard', function () {
 
 
 Route::resource('anunci', AnunciController::class)->middleware('auth');
-
+Route::get('/filter-anuncis', [AnunciController::class, 'filterByCategory'])->name('anuncis.filter');
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

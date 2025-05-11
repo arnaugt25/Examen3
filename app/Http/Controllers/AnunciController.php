@@ -94,4 +94,20 @@ class AnunciController extends Controller
         $anunci->delete();
         return redirect()->route('anunci.index');
     }
+
+    /**
+     * Filter anuncis by category name.
+     */
+    public function filterByCategory(Request $request)
+    {
+        $category = $request->query('category');
+        
+        $anuncis = Anunci::with('category')
+            ->whereHas('category', function($query) use ($category) {
+                $query->where('name', $category);
+            })
+            ->get();
+            
+        return response()->json($anuncis);
+    }
 }
